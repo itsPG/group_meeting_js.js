@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta name="viewport" content="width=1024, user-scalable=no">
+
+	<title>JS in JS, presented by PG</title>
+	
+	<!-- Required stylesheet -->
+	<link rel="stylesheet" href="core/deck.core.css">
+	
+	<!-- Extension CSS files go here. Remove or add as needed. -->
+	<link rel="stylesheet" href="extensions/goto/deck.goto.css">
+	<link rel="stylesheet" href="extensions/menu/deck.menu.css">
+	<link rel="stylesheet" href="extensions/navigation/deck.navigation.css">
+	<link rel="stylesheet" href="extensions/status/deck.status.css">
+	<link rel="stylesheet" href="extensions/hash/deck.hash.css">
+	<link rel="stylesheet" href="extensions/scale/deck.scale.css">
+
+	<!-- Style theme. More available in /themes/style/ or create your own. -->
+	<link rel="stylesheet" href="themes/style/web-2.0.css">
+	
+	<!-- Transition theme. More available in /themes/transition/ or create your own. -->
+	<link rel="stylesheet" href="themes/transition/horizontal-slide.css">
+	
+	<!-- Required Modernizr file -->
+	<script src="modernizr.custom.js"></script>
+
+	<link rel="stylesheet" href="sher/shCoreDefault.css">
+	<script src="sher/shCore.js"></script>
+	<script src="sher/shBrushJScript.js"></script>
+	<style  type="text/css">
+	.PG_bot {
+  position: relative;margin-top: -150px;height: 150px;clear:both;
+}
+.PG_NO {
+  background-color: #FAA;
+  margin: 5px;
+}
+.PG_YES {
+  background-color: #AFA;
+  margin: 5px;
+}
+	</style>
+</head>
+<body class="deck-container">
+
+<!-- Begin slides. Just make elements with a class of slide. -->
+
+<section class="slide">
+	<h1>JS.JS</h1>
+	<h2>JavaScript in JavaScript (js.js): Sandboxing third-party scripts</h2>
+	<p>
+		
+		<br/>
+		<br/>
+		<br/>
+		<br/>
+		<vr/>
+		<div style="text-align:left; ">
+			Jeff Terrace, Stephen R. Beard, and Naga Praveen Kumar Katta<br />
+			Princeton University<br/>
+		</div>
+		<div style="text-align:right; ">Presented by PG Tsai</div><br/>
+	</p>
+	<h5>Powered by deck.js, with CSS modified by PG</h5>
+	<p></p>
+</section>
+
+<section class="slide">
+		<h2>Outline</h2>
+		<h3>1.Introduction</h3>
+		<h3>2.Design</h3>
+		<h3>3.Implementation</h3>
+		<h3>4.Demo Application</h3>
+		<h3>5.Evaluation</h3>
+		<h3>6.Related Work</h3>
+</section>
+<section class="slide">
+		<h1>1.Introduction</h1>
+</section>
+
+<section class="slide">
+		<h2>Web App</h2>
+		
+		<h3 style="font-size:1.7em;">One of the most dominant application deployment platforms.</h3>
+		<h3>Third-party scripts are the problems.</h3>
+
+</section>
+<section class="slide">
+		<h2>The Third-party scripts</h2>
+		
+		<h3>Could be downloaded from the his/her own servers for safety. </h3>
+		<h3>Not always possible for dynamic generated scripts. (e.g. ads)</h3>
+		<h3>JS in iframe still can alert or redirect pages.</h3>
+		<h3>It is hard to verify scripts' behavior. </h3>
+</section>
+<section class="slide">
+		<h2>The Others Solutions</h2>
+		
+		<h3>1. Use static analyzers to rewrite third-party JavaScripts. </h3>
+		<h4>Only works on small JavaScripts.</h4>
+		<h3>2. Extend the browser itself to provide security mechanisms.</h3>
+		<blockquote>Too much pain, not enough profit.</blockquote>
+</section>ˇ
+<section class="slide">
+		<h2>Our Solution</h2>
+		
+		<h1>JS in JS</h1>
+
+		<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
+		<h3>A JavaScript interpreter that runs on top of JavaScript.</h3>
+</section>
+<section class="slide">
+		<h2>SpiderMonkey (interpreter)</h2>
+		
+		<h2>Clang (C/C++ to LLVM)</h2>
+
+		<br/><br/><br/><br/>
+		<h2>Emscripten (LLVM to JS)</h2>
+
+		<h1>Component</h1>
+
+</section>
+
+<section class="slide">
+		<h1>2.Design</h1>
+</section>
+
+<section class="slide">
+		<h2>Design Goals</h2>
+
+		<h3>1. Fine-grained control</h3>
+		<h5>vs Course-grained control</h5>
+		<h3>2. Full JavaScript support</h3>
+		<h5>eval</h5>
+		<h3>3. Browser compatibility</h3>
+		<h5>works for all major browsers</h5>
+		<h3>4. Resilient to attacks</h3>
+		<h5>infinity loop, memory exhaustion</h5>
+</section>
+
+<section class="slide">
+		<h2>js.js API's Design</h2>
+
+		<h3>Very generic</h3>
+		<h3>Can be used to bind any kind of global object inside the sandbox space.</h3>
+
+</section>
+
+<section class="slide">
+	
+	<pre class="brush: js;">
+var jsObjs = JSJS.Init();
+
+var compiledObj = JSJS.CompileScript(
+                     jsObjs.cx, jsObjs.glob, "1 + 1");
+
+var rval = JSJS.ExecuteScript(
+                 jsObjs.cx, jsObjs.glob, compiledObj);
+
+var d = JSJS.ValueToNumber(jsObjs.cx, rval);
+        
+document.write(d);
+
+	</pre>
+</section>
+
+<section class="slide">
+	
+	<pre class="brush: js;">
+var src = "nativeAdd(17, 2.4);";
+var jsObjs = JSJS.Init();
+function nativeAdd(d1, d2)
+{
+	return d1 + d2;
+}
+var dblType = JSJS.Types.double;
+var wrappedNativeFunc = JSJS.wrapFunction
+({
+	func: nativeAdd ,
+	args: [dblType , dblType], 
+	returns: dblType
+});
+
+JSJS.DefineFunction(jsObjs.cx, jsObjs.glob,
+      "nativeAdd", wrappedNativeFunc , 2, 0);
+
+var rval = JSJS.EvaluateScript(jsObjs.cx, jsObjs.glob, src);
+// Convert result to native value
+var d = rval && JSJS.ValueToNumber(jsObjs.cx , rval);
+
+	</pre>
+</section>
+
+<section class="slide">
+	<table border=1>
+		<tr>
+			<td>Solutions</td>
+			<td>Fine-Grained DOM Control</td>
+			<td>Full JS Support</td>
+			<td>Page Redirection</td>
+			<td>Infinity Loop</td>
+			<td>Memory Exhaustion</td>
+			<td>Suspend / Resume</td>
+		</tr>
+		<tr>
+			<td>Direct Include</td>
+			<td class="PG_NO">No</td>
+			<td class="PG_YES">Yes</td>
+			<td class="PG_NO">No</td>
+			<td class="PG_NO">No</td>
+			<td class="PG_NO">No</td>
+			<td class="PG_NO">No</td>
+		</tr>
+		<tr>
+			<td>iframe</td>
+			<td class="PG_NO">No</td>
+			<td class="PG_YES">Yes</td>
+			<td class="PG_NO">No</td>
+			<td class="PG_NO">No</td>
+			<td class="PG_NO">No</td>
+			<td class="PG_NO">No</td>
+		</tr>
+		<tr>
+			<td>Web Worker</td>
+			<td class="PG_NO">No</td>
+			<td class="PG_YES">Yes</td>
+			<td class="PG_YES">Yes</td>
+			<td class="PG_YES">Yes</td>
+			<td class="PG_NO">No</td>
+			<td class="PG_NO">No</td>
+		</tr>
+		<tr>
+			<td>Static</td>
+			<td class="PG_YES">Yes</td>
+			<td class="PG_NO">No</td>
+			<td class="PG_YES">Yes</td>
+			<td class="PG_NO">No</td>
+			<td class="PG_NO">No</td>
+			<td class="PG_NO">No</td>
+		</tr>
+		<tr>
+			<td>Static + Runtime</td>
+			<td class="PG_YES">Yes</td>
+			<td class="PG_NO">No</td>
+			<td class="PG_YES">Yes</td>
+			<td class="PG_NO">No</td>
+			<td class="PG_NO">No</td>
+			<td class="PG_NO">No</td>
+		</tr>
+		<tr>
+			<td>js.js</td>
+			<td class="PG_YES">Yes</td>
+			<td class="PG_YES">Yes</td>
+			<td class="PG_YES">Yes</td>
+			<td class="PG_YES">Yes</td>
+			<td class="PG_YES">Yes</td>
+			<td class="PG_YES">Yes</td>
+		</tr>
+	</table>
+</section>
+
+<section class="slide">
+	<h1>3.Implementation</h1>
+
+</section>
+
+<section class="slide">
+	<h2>Our work</h2>
+	<h3>Ports SpiderMonkey to LLVM bytecode (Using Clang)</h3>
+	<h3>Translates LLVM bytecode to JS (Using Emscripten)<h3>
+</section>
+
+<section class="slide">
+	<h2>Emscripten</h2>
+	<h3>Stack and heap can be emulated by JS's Array.</h3>
+	<h3>Translates LLVM's operation/function to JS's operation/function.</h3>
+	<h3>Emscripten has its libc implementation.</h3>
+</section>
+
+<section class="slide">
+	<h2>Our contribution </h2>
+	<h3>Patches SpiderMonkey. <h3>
+	<h5>so that it compiles into LLVM bytecode that is compatible with Emscripten's translator.</h5>
+	<h3>Modifies inline assembly.</h3>
+	<h3>Fixs some corner cases of Emscripten.</h3>
+	<h3>Writes the js.js API wrapper.</h3>
+</section>
+
+<section class="slide">
+	<h1>4. Demo Application</h1>
+</section>
+
+<section class="slide">
+	<h2>Twitter Widget</h2>
+	<h3>Binding many global objects to the sandbox space.</h3>
+	<h3>Allowing the sandboxed code to bind to event handlers.</h3>
+	<h3>Many document utility functions.</h3>
+	<h3>Wrapping real DOM elements,</h3>
+	<h5>and returning the real DOM element when necessary.</h5>
+</section>
+
+<section class="slide">
+	<h1>5. Evaluation</h1>
+</section>
+
+<section class="slide">
+	<h2>Environment</h2>
+	<pre>
+		Macbook Pro
+		2.4GHz P8600
+		4GB RAM
+		SunSpider Benchmarks
+	</pre>
+</section>
+<section class="slide">
+	<img src="benchmark.png" />
+</section>
+<section class="slide">
+
+	<a href="http://127.0.0.1/~PG/js.js.talk/tweet.html" target="_blank"><h1>Demo</h1></a>
+</section>
+<script>
+
+</script>
+<section class="slide">
+	<h1>6. Related Work</h1>
+</section>
+
+<section class="slide">
+	<pre>Static JavasSript analysis</pre>
+	<h5>Can not check eval, setTimeout, JavaScript need to be ported to fit this framework.</h5>
+	<pre>Transforming untrusted JS dynamically</pre>
+	<h5>The arguments of functions like eval would bypass this check.</h5>
+</section>
+
+<section class="slide">
+	<h1>7. Conclusion</h1>
+</section>
+
+<section class="slide">
+	<h2>Conclusion</h2>
+	<h4>We compiled SpiderMonkey JavaScript engine to JavaScript.</h4>
+	<h4>We implemented the js.js API in JavaScript as a wrapper around the SpiderMonkey API.</h4>
+	<h4>Using this API, we show secure execution of Twitter's Tweet Button and we evaluate the performance overhead of running JavaScript in JavaScript by evaluating on the SunSpider benchmark suite</h4>
+</section>
+
+<!-- End slides. -->
+
+
+<!-- Begin extension snippets. Add or remove as needed. -->
+
+<!-- deck.navigation snippet -->
+<a href="#" class="deck-prev-link" title="Previous">&#8592;</a>
+<a href="#" class="deck-next-link" title="Next">&#8594;</a>
+
+<!-- deck.status snippet -->
+<p class="deck-status">
+	<span class="deck-status-current"></span>
+	/
+	<span class="deck-status-total"></span>
+</p>
+
+<!-- deck.goto snippet -->
+<form action="." method="get" class="goto-form">
+	<label for="goto-slide">Go to slide:</label>
+	<input type="text" name="slidenum" id="goto-slide" list="goto-datalist">
+	<datalist id="goto-datalist"></datalist>
+	<input type="submit" value="Go">
+</form>
+
+<!-- deck.hash snippet -->
+<a href="." title="Permalink to this slide" class="deck-permalink">#</a>
+
+<!-- End extension snippets. -->
+
+
+<!-- Required JS files. -->
+<script src="jquery-1.7.2.min.js"></script>
+<script src="core/deck.core.js"></script>
+
+<!-- Extension JS files. Add or remove as needed. -->
+<script src="../core/deck.core.js"></script>
+<script src="../extensions/hash/deck.hash.js"></script>
+<script src="../extensions/menu/deck.menu.js"></script>
+<script src="../extensions/goto/deck.goto.js"></script>
+<script src="../extensions/status/deck.status.js"></script>
+<script src="../extensions/navigation/deck.navigation.js"></script>
+<script src="../extensions/scale/deck.scale.js"></script>
+
+<!-- Initialize the deck. You can put this in an external file if desired. -->
+<script>
+	$(function() {
+		$.deck('.slide');
+	});
+</script>
+
+
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+</body>
+</html>
